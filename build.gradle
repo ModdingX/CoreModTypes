@@ -1,0 +1,114 @@
+import io.github.noeppi_noeppi.tools.modgradle.api.JavaEnvironment
+import net.minecraftforge.gradle.common.tasks.JarExec
+
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
+
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://maven.parchmentmc.org/' }
+        maven { url = 'https://noeppi-noeppi.github.io/MinecraftUtilities/maven' }
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:5.1.21'
+        classpath 'io.github.noeppi_noeppi.tools:ModGradle:1.0.28'
+        classpath 'org.apache.maven:maven-artifact:3.8.1'
+        classpath 'org.apache.maven:maven-repository-metadata:3.8.1'
+        classpath 'com.google.code.findbugs:jsr305:3.0.1'
+        classpath 'commons-io:commons-io:2.11.0'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+group 'io.github.noeppi_noeppi.misc'
+
+final SOURCE_TRANSFORM_VERSION = '1.0.11'
+
+final List<String> PACKAGES = Files.readAllLines(project.file('packages.txt').toPath()).stream()
+        .map(String::strip).filter(str -> !str.isEmpty()).toList()
+
+final List<String> CLASSES = Files.readAllLines(project.file('classes.txt').toPath()).stream()
+        .map(String::strip).filter(str -> !str.isEmpty()).toList()
+
+repositories {
+    maven { url 'https://maven.minecraftforge.net' }
+    maven { url 'https://noeppi-noeppi.github.io/MinecraftUtilities/maven' }
+}
+
+dependencies {
+    implementation 'net.minecraftforge:coremods:5.0.1'
+    implementation("org.ow2.asm:asm:9.1")
+    implementation("org.ow2.asm:asm-commons:9.1")
+    implementation("org.ow2.asm:asm-tree:9.1")
+    implementation("org.ow2.asm:asm-util:9.1")
+}
+
+task extractInheritance(type: JarExec) {
+    tool = "io.github.noeppi_noeppi.tools:SourceTransform:${SOURCE_TRANSFORM_VERSION}:fatjar"
+    args = [
+            'inheritance',
+            '-n', String.join(";", CLASSES),
+            '-m', String.join(";", PACKAGES),
+            '-p', JavaEnvironment.getLibraryPath(project, compileJava).asPath,
+            '-o', project.file('build/inheritance.txt').toPath().toAbsolutePath().normalize().toString(),
+    ]
+}
+
+task generateBase(type: JarExec) {
+    dependsOn extractInheritance
+    
+    tool = "io.github.noeppi_noeppi.tools:SourceTransform:${SOURCE_TRANSFORM_VERSION}:fatjar"
+    args = [
+            'jstype',
+            '-i', project.file('build/inheritance.txt').toPath().toAbsolutePath().normalize().toString(),
+            '-c', String.join(";", CLASSES),
+            '-m', String.join(";", PACKAGES),
+            '-p', JavaEnvironment.getLibraryPath(project, compileJava).asPath,
+            '-j', project.file('build/js/coremods.js').toPath().toAbsolutePath().normalize().toString(),
+            '-t', project.file('build/jsgen/coremods-base.d.ts').toPath().toAbsolutePath().normalize().toString(),
+            '-n', project.file('nullability.txt').toPath().toAbsolutePath().normalize().toString()
+    ]
+}
+
+task mergeTS {
+    dependsOn generateBase
+    
+    doLast {
+        BufferedWriter writer = Files.newBufferedWriter(project.file('build/js/coremods.d.ts').toPath(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)
+        writer.write(Files.readString(project.file('coremods.d.ts').toPath()) + "\n")
+        writer.write(Files.readString(project.file('build/jsgen/coremods-base.d.ts').toPath()) + "\n")
+        writer.close()
+    }
+}
+
+task targetZip(type: Zip) {
+    dependsOn mergeTS
+    
+    from(project.file('build/js/coremods.js'))
+    from(project.file('build/js/coremods.d.ts'))
+    from(project.file('tsconfig.json'))
+    
+    version project.version
+}
+build.dependsOn targetZip
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+            version = project.version
+            artifact targetZip
+        }
+    }
+    repositories {
+        maven {
+            url '../MinecraftUtilities/maven'
+        }
+    }
+}
