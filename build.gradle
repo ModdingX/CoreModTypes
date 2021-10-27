@@ -27,7 +27,7 @@ apply plugin: 'maven-publish'
 
 group 'io.github.noeppi_noeppi.misc'
 
-final SOURCE_TRANSFORM_VERSION = '1.0.11'
+final SOURCE_TRANSFORM_VERSION = '1.0.12'
 
 final List<String> PACKAGES = Files.readAllLines(project.file('packages.txt').toPath()).stream()
         .map(String::strip).filter(str -> !str.isEmpty()).toList()
