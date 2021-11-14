@@ -13,8 +13,8 @@ buildscript {
     }
 
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:5.1.21'
-        classpath 'io.github.noeppi_noeppi.tools:ModGradle:1.0.28'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:5.1.24'
+        classpath 'io.github.noeppi_noeppi.tools:ModGradle:2.0.0'
         classpath 'org.apache.maven:maven-artifact:3.8.1'
         classpath 'org.apache.maven:maven-repository-metadata:3.8.1'
         classpath 'com.google.code.findbugs:jsr305:3.0.1'
@@ -27,7 +27,7 @@ apply plugin: 'maven-publish'
 
 group 'io.github.noeppi_noeppi.misc'
 
-final SOURCE_TRANSFORM_VERSION = '1.0.12'
+final SOURCE_TRANSFORM_VERSION = '1.0.13'
 
 final List<String> PACKAGES = Files.readAllLines(project.file('packages.txt').toPath()).stream()
         .map(String::strip).filter(str -> !str.isEmpty()).toList()
@@ -50,29 +50,29 @@ dependencies {
 
 task extractInheritance(type: JarExec) {
     tool = "io.github.noeppi_noeppi.tools:SourceTransform:${SOURCE_TRANSFORM_VERSION}:fatjar"
-    args = [
+    args = provider{[
             'inheritance',
             '-n', String.join(";", CLASSES),
             '-m', String.join(";", PACKAGES),
-            '-p', JavaEnvironment.getLibraryPath(project, compileJava).asPath,
+            '-p', JavaEnvironment.getLibraryPath(project, compileJava).get().asPath,
             '-o', project.file('build/inheritance.txt').toPath().toAbsolutePath().normalize().toString(),
-    ]
+    ]}
 }
 
 task generateBase(type: JarExec) {
     dependsOn extractInheritance
     
     tool = "io.github.noeppi_noeppi.tools:SourceTransform:${SOURCE_TRANSFORM_VERSION}:fatjar"
-    args = [
+    args = provider{[
             'jstype',
             '-i', project.file('build/inheritance.txt').toPath().toAbsolutePath().normalize().toString(),
             '-c', String.join(";", CLASSES),
             '-m', String.join(";", PACKAGES),
-            '-p', JavaEnvironment.getLibraryPath(project, compileJava).asPath,
+            '-p', JavaEnvironment.getLibraryPath(project, compileJava).get().asPath,
             '-j', project.file('build/js/coremods.js').toPath().toAbsolutePath().normalize().toString(),
             '-t', project.file('build/jsgen/coremods-base.d.ts').toPath().toAbsolutePath().normalize().toString(),
             '-n', project.file('nullability.txt').toPath().toAbsolutePath().normalize().toString()
-    ]
+    ]}
 }
 
 task mergeTS {
