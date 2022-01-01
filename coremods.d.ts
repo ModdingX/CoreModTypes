@@ -18,7 +18,7 @@ export interface CoreModClassesTarget {
 }
 
 export interface CoreModFieldTarget {
-    type: 'METHOD';
+    type: 'FIELD';
     class: string;
     fieldName: string;
 }
