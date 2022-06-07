@@ -1,33 +1,36 @@
-import io.github.noeppi_noeppi.tools.modgradle.api.JavaEnvironment
-import net.minecraftforge.gradle.common.tasks.JarExec
+import org.moddingx.modgradle.api.JavaEnvironment
+import org.moddingx.modgradle.api.task.ClasspathExec
 
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 
 buildscript {
     repositories {
+        maven { url = 'https://maven.moddingx.org' }
         maven { url = 'https://maven.minecraftforge.net/' }
         maven { url = 'https://maven.parchmentmc.org/' }
-        maven { url = 'https://noeppi-noeppi.github.io/MinecraftUtilities/maven' }
         mavenCentral()
     }
 
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:5.1.27'
-        classpath 'io.github.noeppi_noeppi.tools:ModGradle:2.0.9'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:5.1.41'
+        classpath 'org.moddingx:ModGradle:3.0.0'
         classpath 'org.apache.maven:maven-artifact:3.8.1'
         classpath 'org.apache.maven:maven-repository-metadata:3.8.1'
         classpath 'com.google.code.findbugs:jsr305:3.0.1'
         classpath 'commons-io:commons-io:2.11.0'
+
+        classpath 'org.apache.logging.log4j:log4j-api:2.17.2'
+        classpath 'org.apache.logging.log4j:log4j-core:2.17.2'
     }
 }
 
 apply plugin: 'java'
 apply plugin: 'maven-publish'
 
-group 'io.github.noeppi_noeppi.misc'
+group 'org.moddingx'
 
-final SOURCE_TRANSFORM_VERSION = '1.0.13'
+final SOURCE_TRANSFORM_VERSION = '2.0.0'
 
 final List<String> PACKAGES = Files.readAllLines(project.file('packages.txt').toPath()).stream()
         .map(String::strip).filter(str -> !str.isEmpty()).toList()
@@ -36,8 +39,8 @@ final List<String> CLASSES = Files.readAllLines(project.file('classes.txt').toPa
         .map(String::strip).filter(str -> !str.isEmpty()).toList()
 
 repositories {
+    maven { url 'https://maven.moddingx.org' }
     maven { url 'https://maven.minecraftforge.net' }
-    maven { url 'https://noeppi-noeppi.github.io/MinecraftUtilities/maven' }
 }
 
 dependencies {
@@ -48,9 +51,9 @@ dependencies {
     implementation("org.ow2.asm:asm-util:9.1")
 }
 
-task extractInheritance(type: JarExec) {
-    tool = "io.github.noeppi_noeppi.tools:SourceTransform:${SOURCE_TRANSFORM_VERSION}:fatjar"
-    args = provider{[
+task extractInheritance(type: ClasspathExec) {
+    tool = "org.moddingx:SourceTransform:${SOURCE_TRANSFORM_VERSION}"
+    args = provider {[
             'inheritance',
             '-n', String.join(";", CLASSES),
             '-m', String.join(";", PACKAGES),
@@ -59,11 +62,11 @@ task extractInheritance(type: JarExec) {
     ]}
 }
 
-task generateBase(type: JarExec) {
+task generateBase(type: ClasspathExec) {
     dependsOn extractInheritance
     
-    tool = "io.github.noeppi_noeppi.tools:SourceTransform:${SOURCE_TRANSFORM_VERSION}:fatjar"
-    args = provider{[
+    tool = "org.moddingx:SourceTransform:${SOURCE_TRANSFORM_VERSION}"
+    args = provider {[
             'jstype',
             '-i', project.file('build/inheritance.txt').toPath().toAbsolutePath().normalize().toString(),
             '-c', String.join(";", CLASSES),
@@ -108,7 +111,7 @@ publishing {
     }
     repositories {
         maven {
-            url '../MinecraftUtilities/maven'
+            url '../moddingx/maven'
         }
     }
 }
