@@ -1,4 +1,4 @@
-net.minecraftforge.coremod.api.ASMAPI
+net.neoforged.coremod.api.ASMAPI
 org.objectweb.asm.Opcodes
 org.objectweb.asm.tree.AbstractInsnNode
 org.objectweb.asm.tree.FieldInsnNode

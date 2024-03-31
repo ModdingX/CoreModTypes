@@ -30,7 +30,7 @@ apply plugin: 'maven-publish'
 
 group 'org.moddingx'
 
-final SOURCE_TRANSFORM_VERSION = '2.0.0'
+final SOURCE_TRANSFORM_VERSION = '2.1.3'
 
 final List<String> PACKAGES = Files.readAllLines(project.file('packages.txt').toPath()).stream()
         .map(String::strip).filter(str -> !str.isEmpty()).toList()
@@ -40,15 +40,15 @@ final List<String> CLASSES = Files.readAllLines(project.file('classes.txt').toPa
 
 repositories {
     maven { url 'https://maven.moddingx.org' }
-    maven { url 'https://maven.minecraftforge.net' }
+    maven { url = 'https://maven.neoforged.net/releases' }
 }
 
 dependencies {
-    implementation 'net.minecraftforge:coremods:5.0.2'
-    implementation("org.ow2.asm:asm:9.1")
-    implementation("org.ow2.asm:asm-commons:9.1")
-    implementation("org.ow2.asm:asm-tree:9.1")
-    implementation("org.ow2.asm:asm-util:9.1")
+    implementation 'net.neoforged:coremods:7.0.3'
+    implementation("org.ow2.asm:asm:9.3")
+    implementation("org.ow2.asm:asm-commons:9.3")
+    implementation("org.ow2.asm:asm-tree:9.3")
+    implementation("org.ow2.asm:asm-util:9.3")
 }
 
 task extractInheritance(type: ClasspathExec) {
